@@ -75,19 +75,23 @@ class LoginVC: UIViewController {
                         let urlPost = URL_LOGIN_FACEBOOK
                         Alamofire.request(.POST, urlPost, parameters: ["accessToken": accessToken, "data" : fbResult]).responseJSON { response in
                             
-                            if let res = response.result.value as? Dictionary<String, String> {
+                            if let res = response.result.value as? Dictionary<String, AnyObject> {
+                                    print("data login \(res)")
+                                    ACCESS_TOKEN = res["token"] as? String
                                 
-                                    ACCESS_TOKEN = res["token"]
-                                    print("send data \(ACCESS_TOKEN)")
+                                    let uid = res["id"] as! Int
+                                    USER_ID = "\(uid)"
                                 
+                                    print("userFunEyeID \(USER_ID)")
                                     NSUserDefaults.standardUserDefaults().setObject(ACCESS_TOKEN!, forKey: ACCESS_TOKEN_KEY)
-                                    
+                                    NSUserDefaults.standardUserDefaults().setObject(USER_ID!, forKey: USER_ID_KEY)
+                                
                                     NSUserDefaults.standardUserDefaults().synchronize()
                                     
                                     dispatch_async(dispatch_get_main_queue()) {
                                         [unowned self] in
                                         self.video.stopVideo()
-                                        self.performSegueWithIdentifier("FirstFollowVC", sender: userFbId)
+                                        self.performSegueWithIdentifier("FirstFollowVC", sender: USER_ID)
                                     }
                                 
                             } else {

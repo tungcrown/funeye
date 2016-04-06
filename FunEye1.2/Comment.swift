@@ -57,7 +57,10 @@ class Comment {
             
             if let userAvatar = from["avatar"] as? String {
                 self._userAvatar = userAvatar
+            } else {
+                self._userAvatar = "https://graph.facebook.com/tungcrown2016/picture"
             }
+            
         }
         
         if let timeCreate = dictionary["created"] as? String {

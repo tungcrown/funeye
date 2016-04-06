@@ -22,41 +22,61 @@ class DataService {
     }
     
     func savePosts(post: Post) {
-        
-        let videoUrl = post.videoUrl
-        var localPath: NSURL?
-        var pathComponent: String?
-        Alamofire.download(.GET, videoUrl, destination: { (temporaryURL, response) in
-            let directoryURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0]
-            //let pathComponent = response.suggestedFilename
-            pathComponent = "video\(NSDate.timeIntervalSinceReferenceDate()).mp4"
-            
-            localPath = directoryURL.URLByAppendingPathComponent(pathComponent!)
-            
-            return localPath!
-        }).response { (request, response, data, error) in
-            
-            if localPath != nil {
+        var checkPostExist = false
+        for (index, checkPost) in _loadingPost.enumerate() {
+            if checkPost.postId == post.postId {
+                print("load lai post")
+                checkPostExist = true
+                _loadingPost[index] = post
+                _loadingPost[index].videoPath = checkPost.videoPath
                 
-                print("Downloaded file to \(localPath!)")
-                post.videoPath = pathComponent!
-
-                
-                self._loadingPost.append(post)
-                
-                let postsData = NSKeyedArchiver.archivedDataWithRootObject(self._loadingPost)
-                NSUserDefaults.standardUserDefaults().setObject(postsData, forKey: self.KEY_POSTS)
+                let postsData = NSKeyedArchiver.archivedDataWithRootObject(_loadingPost)
+                NSUserDefaults.standardUserDefaults().setObject(postsData, forKey: KEY_POSTS)
                 NSUserDefaults.standardUserDefaults().synchronize()
                 
                 self.loadPosts()
             }
-            
-            if error != nil {
-                print("error download: \(error.debugDescription)")
-            }
-            
         }
-
+        
+        if checkPostExist == false {
+            print("Moi toanh")
+            
+            let videoUrl = post.videoUrl
+            var localPath: NSURL?
+            var pathComponent: String?
+            Alamofire.download(.GET, videoUrl, destination: { (temporaryURL, response) in
+                let directoryURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0]
+                //let pathComponent = response.suggestedFilename
+                pathComponent = "video\(NSDate.timeIntervalSinceReferenceDate()).mp4"
+                
+                localPath = directoryURL.URLByAppendingPathComponent(pathComponent!)
+                
+                return localPath!
+            }).response { (request, response, data, error) in
+                
+                if localPath != nil {
+                    
+                    print("Downloaded file to \(localPath!)")
+                    post.videoPath = pathComponent!
+                    /*if self._loadingPost.count > 3 {
+                        self._loadingPost.removeLast()
+                    }*/
+                    self._loadingPost.append(post)
+                    
+                    
+                    let postsData = NSKeyedArchiver.archivedDataWithRootObject(self._loadingPost)
+                    NSUserDefaults.standardUserDefaults().setObject(postsData, forKey: self.KEY_POSTS)
+                    NSUserDefaults.standardUserDefaults().synchronize()
+                    
+                    self.loadPosts()
+                }
+                
+                if error != nil {
+                    print("error download: \(error.debugDescription)")
+                }
+                
+            }
+        }
     }
     /*
     func saveImage(imageUrl: String) {

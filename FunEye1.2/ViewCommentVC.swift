@@ -8,21 +8,24 @@
 
 import UIKit
 import Alamofire
+import SocketIOClientSwift
+
 
 class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     @IBOutlet weak var commentTableView: UITableView!
+    @IBOutlet weak var uiviewOldCmt: UIView!
+    @IBOutlet weak var btnLoadOlderComment: UIButton!
     
-    @IBOutlet weak var uivInputComment: UIView!
-    @IBOutlet weak var txtInputComment: UITextField!
-    @IBOutlet weak var btnPostComment: UIButton!
-    
-    @IBOutlet weak var scrollView: UIScrollView!
+    var btnPost: UIButton!
+    var uivTextField: UIView!
+    var textField: UITextField!
     
     static var imageCache = NSCache()
     
     var post_id: String!
     var comments = [Comment]()
+    var nextCmtPage = 1
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,28 +36,40 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         print(post_id)
         
         //download data
-        //let commentUrl = URL_GET_COMMENT
-        let commentUrl = createUrlCallComment(post_id)
+        /*
+        let commentUrl = URL_GET_COMMENT_POST(post_id)
         let url = NSURL(string: commentUrl)!
+        print("ulr comment \(url)")
         Alamofire.request(.GET, url).responseJSON { response in
-            
             if let res = response.result.value as? Dictionary<String, AnyObject> {
                 if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
                     for json in jsons {
                         let comment = Comment(dictionary: json)
+                        print(comment.userAvatar)
                         self.comments.append(comment)
                     }
                     self.commentTableView.reloadData()
+                }
+                
+                if let isNext = res["isNext"] as? Bool where isNext == true {
+                    print("more cmt true \(isNext)")
+                    self.nextCmtPage += 1
+                } else {
+                    print("more cmt false \(res["isNext"])")
+                    self.uiviewOldCmt.frame.size.height = 0
                 }
             } else {
                     print("comment nil")
             }
         }
+        */
+        loadCommentData()
     }
     
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
         
+        createInputField()
         registerKeyboardNotifications()
     }
     
@@ -73,25 +88,80 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     }
     
     func keyboardDidShow(notification: NSNotification) {
+        print("show keyboard")
         let userInfo: NSDictionary = notification.userInfo!
         let keyboardSize = userInfo.objectForKey(UIKeyboardFrameBeginUserInfoKey)!.CGRectValue.size
-        let contentInsets = UIEdgeInsetsMake(0, 0, keyboardSize.height+8, 0)
-        scrollView.contentInset = contentInsets
-        scrollView.scrollIndicatorInsets = contentInsets
         
-        var viewRect = view.frame
-        viewRect.size.height -= keyboardSize.height
-        if CGRectContainsPoint(viewRect, uivInputComment.frame.origin) {
-            let scrollPoint = CGPointMake(0, uivInputComment.frame.origin.y - keyboardSize.height)
-            scrollView.setContentOffset(scrollPoint, animated: true)
-        }
+        self.uivTextField.frame = self.setFrameUiview(keyboardSize.height)
+        
     }
     
     func keyboardWillHide(notification: NSNotification) {
-        scrollView.contentInset = UIEdgeInsetsZero
-        scrollView.scrollIndicatorInsets = UIEdgeInsetsZero
+        UIView.animateWithDuration(0.3) {
+            
+            self.uivTextField.frame = self.setFrameUiview(0.0)
+        }
     }
     
+    func setFrameUiview(bottom: CGFloat) -> CGRect {
+        let heightUiview: CGFloat = 45.0
+        let yUivew = self.view.frame.height - heightUiview - bottom
+        let widthUiview = self.view.frame.width
+        
+        return CGRectMake(0, yUivew, widthUiview, heightUiview)
+    }
+    
+    func createInputField() {
+        uivTextField = UIView(frame: setFrameUiview(0.0))
+        uivTextField.backgroundColor=UIColor.whiteColor()
+        
+        self.view.addSubview(uivTextField)
+        
+        //add button post
+        btnPost = UIButton(frame: CGRectMake(self.view.frame.width - 58, 8, 50, 30))
+        btnPost.setTitle("Post", forState: .Normal)
+        btnPost.setTitleColor(UIColor(red: 100/255, green: 53/255, blue: 201/255, alpha: 1.0), forState: .Normal)
+        btnPost.addTarget(self, action: #selector(self.btnPost(_:)), forControlEvents: .TouchUpInside)
+        
+        uivTextField.addSubview(btnPost)
+        
+        //add textfield
+        textField = UITextField(frame: CGRectMake(8, 8, self.view.frame.width - 66, 30))
+        textField.backgroundColor = UIColor(red: 227/255, green: 227/255, blue: 227/255, alpha: 0.5)
+        textField.font = UIFont(name: "Helvetica", size: 14.0)
+        textField.layer.cornerRadius = 3.0
+        textField.layer.borderWidth = 1.0
+        textField.layer.borderColor = UIColor(red: 227/255, green: 227/255, blue: 227/255, alpha: 1).CGColor
+        textField.textColor = UIColor.darkTextColor()
+        textField.placeholder = "Để lại nhận xét"
+        
+        uivTextField.addSubview(textField)
+        
+        //add border 
+        let uivBoder = UIView(frame: CGRectMake(0, 0, self.view.frame.width, 1))
+        uivBoder.backgroundColor = UIColor(red: 227/255, green: 227/255, blue: 227/255, alpha: 1)
+        uivTextField.addSubview(uivBoder)
+    }
+    
+    func btnPost(sender: UIButton) {
+        if textField.text != "" {
+            let dataCmt = textField.text
+            print("dataCmt \(dataCmt)")
+            self.view.endEditing(true)
+            Alamofire.request(.POST, URL_GET_COMMENT_POST(post_id), parameters: ["content": dataCmt!]).responseJSON { response in
+                if let res = response.result.value as? Dictionary<String, AnyObject> {
+                    print("Comnet Done \(res)")
+                    print("Comnet Done \(res["content"])")
+                    
+                    let comment = Comment(dictionary: res)
+                    self.comments.append(comment)
+                    self.commentTableView.reloadData()
+                } else {
+                    print("response \(response)")
+                }
+             }
+        }
+    }
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         return 1
     }
@@ -112,14 +182,76 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     }
     
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        showAlertClickComment()
         view.endEditing(true)
+        
+    }
+    
+    func showAlertClickComment() {
+        let myActionSheet = UIAlertController(title: nil, message: nil, preferredStyle: UIAlertControllerStyle.ActionSheet)
+        
+        let blueAction = UIAlertAction(title: "Block", style: UIAlertActionStyle.Destructive) { (action) in
+            print("Block action button tapped")
+        }
+        
+        let redAction = UIAlertAction(title: "Trả lời", style: UIAlertActionStyle.Default) { (action) in
+            print("Trả lời action button tapped")
+        }
+        
+        let yellowAction = UIAlertAction(title: "Xóa", style: UIAlertActionStyle.Default) { (action) in
+            print("Xóa action button tapped")
+        }
+        
+        let cancelAction = UIAlertAction(title: "Hủy Bỏ", style: UIAlertActionStyle.Cancel) { (action) in
+            print("Cancel action button tapped")
+        }
+        
+        myActionSheet.addAction(blueAction)
+        myActionSheet.addAction(redAction)
+        myActionSheet.addAction(yellowAction)
+        myActionSheet.addAction(cancelAction)
+        
+        self.presentViewController(myActionSheet, animated: true, completion: nil)
+    }
+    
+    func loadCommentData() {
+        let url =  URL_MAIN_DOMAIN + "/api/articles/\(post_id)/comments?page=\(nextCmtPage)&access_token=\(ACCESS_TOKEN)"
+        btnLoadOlderComment.setTitle("Tải nhận xét...", forState: .Normal)
+        Alamofire.request(.GET, url).responseJSON { response in
+            if let res = response.result.value as? Dictionary<String, AnyObject> {
+                if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
+                    for json in jsons {
+                        let comment = Comment(dictionary: json)
+                        self.comments.insert(comment, atIndex:0)
+                    }
+                    self.commentTableView.reloadData()
+                }
+                
+                if let isNext = res["isNext"] as? Bool where isNext == true {
+                    print("more cmt true \(isNext)")
+                    self.nextCmtPage += 1
+                    self.btnLoadOlderComment.setTitle("Xem nhận xét cũ hơn", forState: .Normal)
+                } else {
+                    print("more cmt false \(res["isNext"])")
+                    UIView.animateWithDuration(0.5, animations: {
+                        self.btnLoadOlderComment.alpha = 0
+                        }, completion: { (true) in
+                            self.uiviewOldCmt.frame.size.height = 0
+                            self.btnLoadOlderComment.frame.size.height = 0
+                    })
+                    
+                }
+            } else {
+                print("comment nil")
+            }
+        }
+    }
+    
+    @IBAction func loadOlderComment(sender: UIButton) {
+        loadCommentData()
     }
     
     @IBAction func backNewfeeds(sender: UIButton) {
         self.dismissViewControllerAnimated(true, completion: nil)
-    }
-    
-    @IBAction func btnPostCommentACTION(sender: UIButton) {
-        
     }
 }

@@ -8,11 +8,14 @@
 
 import Foundation
 import UIKit
+import AVFoundation
 
 let SHADOW_COLOR: CGFloat = 157.0 / 255.0
 let PATH_SAVE_MUSIC = "music_save"
 let PATH_SAVE_VIDEO = "video_save"
 let PATH_SAVE_RCORDING_VIDEO = "recording_video_save"
+
+var PLAYER_NOW = AVPlayer()
 
 func createTempPath(typePath: String) -> NSURL {
     let rand = arc4random()%1000

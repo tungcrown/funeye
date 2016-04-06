@@ -26,10 +26,6 @@ class FirstFollowCell: UITableViewCell {
         btnFollowFriends.clipsToBounds = true
     }
     
-    @IBAction func btnFollowFriendsACTION(sender: UIButton) {
-        sender.setTitle("...", forState: .Normal)
-    }
-    
     func configureCell(friend: Friend) {
         lblUserFriendName.text = friend.name
         lblSourceFriends.text = friend.message

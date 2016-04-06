@@ -85,7 +85,9 @@ strip_invalid_archs() {
 
 if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "Pods-FunEye1.2/Alamofire.framework"
+  install_framework "Pods-FunEye1.2/SocketIOClientSwift.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "Pods-FunEye1.2/Alamofire.framework"
+  install_framework "Pods-FunEye1.2/SocketIOClientSwift.framework"
 fi

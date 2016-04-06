@@ -5,9 +5,11 @@
 //  Created by Lê Thanh Tùng on 3/22/16.
 //  Copyright © 2016 Lê Thanh Tùng. All rights reserved.
 //
-
+import UIKit
+import AVKit
 import Foundation
 import AVFoundation
+import Alamofire
 
 class Post: NSObject, NSCoding {
     private var _postId: String!
@@ -27,6 +29,9 @@ class Post: NSObject, NSCoding {
     private var _shares: Int!
     
     private var Observer: NSObjectProtocol!
+    private var _uiviewVideo: UIView!
+    
+    private var _isLikePost: Bool = false
     
     var postId: String {
         return _postId
@@ -40,6 +45,16 @@ class Post: NSObject, NSCoding {
         return _videoUrl
     }
     
+    var isLikePost: Bool {
+        get {
+            return _isLikePost
+        }
+        set {
+            _isLikePost = newValue
+        }
+        
+    }
+    
     var videoAVplayer: AVPlayer {
         get {
             return _videoAVplayer
@@ -51,7 +66,11 @@ class Post: NSObject, NSCoding {
     
     var videoPath: String {
         get {
-            return _videoPath
+            if _videoPath == nil {
+                return ""
+            } else {
+                return _videoPath
+            }
         }
         
         set {
@@ -72,7 +91,13 @@ class Post: NSObject, NSCoding {
     }
     
     var views: Int {
-        return _views
+        get {
+            return _views
+        }
+        
+        set {
+            self._views = newValue
+        }
     }
     
     var likes: Int {
@@ -88,12 +113,7 @@ class Post: NSObject, NSCoding {
     }
     
     //testing
-    init(caption: String, videoUrl: String) {
-        self._caption = caption
-        self._videoUrl = videoUrl
-        
-    }
-    
+   
     init(dictionary: Dictionary<String, AnyObject>) {
         
         if let id = dictionary["id"] as? String {
@@ -140,6 +160,21 @@ class Post: NSObject, NSCoding {
             }
             
         }
+        
+        if let arrayLikes = dictionary["likes"] as? [Int] {
+            if arrayLikes.count == 0 {
+                self._isLikePost = false
+            } else {
+                if arrayLikes.contains(Int(USER_ID)!){
+                    self._isLikePost = true
+                } else {
+                    self._isLikePost = false
+                }
+            }
+        } else {
+            print("dictionary[likes] \(dictionary["likes"])")
+            self._isLikePost = false
+        }
     }
     
     override init() {
@@ -159,6 +194,8 @@ class Post: NSObject, NSCoding {
         self._comments = aDecoder.decodeObjectForKey("comments") as? Int
         self._views = aDecoder.decodeObjectForKey("views") as? Int
         self._shares = aDecoder.decodeObjectForKey("shares") as? Int
+        
+        self._isLikePost = aDecoder.decodeObjectForKey("isLikePost") as! Bool
     }
     
     func encodeWithCoder(aCoder: NSCoder) {
@@ -173,20 +210,77 @@ class Post: NSObject, NSCoding {
         aCoder.encodeObject(self._comments, forKey: "comments")
         aCoder.encodeObject(self._views, forKey: "views")
         aCoder.encodeObject(self._shares, forKey: "shares")
+        aCoder.encodeObject(self._isLikePost, forKey: "isLikePost")
     }
-    
-    func playVideo() {
+    /*
+    func playVideo(uiviewVideo: UIView) {
         if _videoAVplayer != nil {
             _videoAVplayer.play()
-            loopVideo(self._videoAVplayer)
+            loopVideo(_videoAVplayer)
         }else {
-            print("nil video")
+            
+            let fullPath = DataService.instance.documentPathForFilename(_videoPath)
+            let nsUrl = NSURL(string: fullPath)
+            
+            _videoAVplayer =  AVPlayer(URL: nsUrl!)
+            
+            createPlayerController(_uiviewVideo, video: _videoAVplayer)
+            
+            _videoAVplayer.play()
+            loopVideo(_videoAVplayer)
+ 
+            print("nil video play! \(_videoPath)")
         }
+        
+        let fullPath = DataService.instance.documentPathForFilename(_videoPath)
+        let nsUrl = NSURL(string: fullPath)
+        
+        _videoAVplayer =  AVPlayer(URL: nsUrl!)
+        PLAYER_NOW = _videoAVplayer
+        createPlayerController(uiviewVideo, video: PLAYER_NOW)
+        PLAYER_NOW.play()
+        loopVideo(PLAYER_NOW)
+    }
+    
+    func createPlayerController(uiviewVideo: UIView, video: AVPlayer){
+        
+        let playerController = AVPlayerViewController()
+        
+        playerController.view.frame = uiviewVideo.bounds
+        playerController.view.sizeToFit()
+        
+        playerController.showsPlaybackControls = false
+        playerController.videoGravity = AVLayerVideoGravityResizeAspectFill
+        
+        //need remove old subview before add new subview
+        for subview in uiviewVideo.subviews as [UIView] {
+            subview.removeFromSuperview()
+        }
+        
+        uiviewVideo.addSubview(playerController.view)
+        
+        playerController.player = video
+        playerController.removeFromParentViewController()
+    }
+    
+    func SetUiviewVideo(uiviewVideo: UIView) {
+        //self._uiviewVideo = uiviewVideo
+        self._uiviewVideo = UIView(frame: uiviewVideo.bounds)
+        uiviewVideo.addSubview(_uiviewVideo)
     }
     
     func pauseVideo() {
-        if self._videoAVplayer != nil {
-            self._videoAVplayer.pause()
+        PLAYER_NOW = AVPlayer()
+        if self.Observer != nil {
+            NSNotificationCenter.defaultCenter().removeObserver(self.Observer)
+        }
+        
+        
+        if _videoAVplayer != nil {
+            //_uiviewVideo.removeFromSuperview()
+            _videoAVplayer.pause()
+            _videoAVplayer = AVPlayer()
+            
             
             if self.Observer != nil {
                 NSNotificationCenter.defaultCenter().removeObserver(self.Observer)
@@ -199,7 +293,8 @@ class Post: NSObject, NSCoding {
             videoPlayer.seekToTime(kCMTimeZero)
             videoPlayer.play()
             
-            print("loop video :\(videoPlayer)")
+            print("loop video \(URL_PUT_VIEW_POST(self._postId)) :\(videoPlayer)")
+            Alamofire.request(.PUT, URL_PUT_VIEW_POST(self._postId))
         }
-    }
+    }*/
 }

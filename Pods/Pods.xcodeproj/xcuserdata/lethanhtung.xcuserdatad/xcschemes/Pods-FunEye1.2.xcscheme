@@ -14,7 +14,7 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = 'primary'
-               BlueprintIdentifier = 'B87A77F4A5F6B8515FEA01E6'
+               BlueprintIdentifier = '8A54FD25B0DC7DBC4AAA9AA2'
                BlueprintName = 'Pods-FunEye1.2'
                ReferencedContainer = 'container:Pods.xcodeproj'
                BuildableName = 'Pods_FunEye1_2.framework'>

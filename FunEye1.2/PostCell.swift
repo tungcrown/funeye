@@ -60,9 +60,11 @@ class PostCell: UITableViewCell {
         lblCountLikes.text = "\(post.likes)"
         lblCountComments.text = "\(post.comments)"
         
+        //post.SetUiviewVideo(uiviewVideo)
         //load user photo
         DataService.instance.downloadAndSetImageFromUrl(post.userAvatar, imgView: imgProfileUser, imageCache: ViewController.imageCache)
         
+        /*
         let urlStr = post.videoUrl
         let video: AVPlayer!
         video = ViewController.videoCache.objectForKey(urlStr) as? AVPlayer
@@ -86,6 +88,14 @@ class PostCell: UITableViewCell {
                 post.playVideo()
             }
         }
+        */
+ 
+        if post.isLikePost {
+            btnLike.setImage(UIImage(named: "loved"), forState: .Normal)
+        } else {
+            btnLike.setImage(UIImage(named: "love"), forState: .Normal)
+        }
+        
     }
     
     func createPlayerController(video: AVPlayer){
@@ -101,19 +111,20 @@ class PostCell: UITableViewCell {
         playerController.videoGravity = AVLayerVideoGravityResizeAspectFill
         
         //need remove old subview before add new subview
+        /*
         for subview in uiviewVideo.subviews as [UIView] {
             subview.removeFromSuperview()
         }
-        
-        uiviewVideo.addSubview(playerController.view)
+        */
+        uiviewVideo.insertSubview(playerController.view, atIndex: 0)
         playerController.player = video
     }
     
     func tapToVideo(sender: UITapGestureRecognizer) {
-        if ((player.rate != 0) && (player.error == nil)) {
-            player.pause()
+        if ((PLAYER_NOW.rate != 0) && (PLAYER_NOW.error == nil)) {
+            PLAYER_NOW.pause()
         }else {
-            player.play()
+            PLAYER_NOW.play()
         }
     }
 
