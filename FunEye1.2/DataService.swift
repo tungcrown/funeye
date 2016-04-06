@@ -117,6 +117,8 @@ class DataService {
         if let postsData = NSUserDefaults.standardUserDefaults().objectForKey(KEY_POSTS) as? NSData {
             if let postsArray = NSKeyedUnarchiver.unarchiveObjectWithData(postsData) as? [Post] {
                 _loadingPost = postsArray
+            } else {
+                _loadingPost = [Post]()
             }
         }
         

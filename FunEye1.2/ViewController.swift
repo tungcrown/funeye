@@ -30,16 +30,16 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        getDataAccess()
-        
         tableView.delegate = self
         tableView.dataSource = self
-  
+        
+        getDataAccess()
+        
         DataService.instance.loadPosts()
         NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(ViewController.onPostsLoaded), name: "PostsLoaded", object: nil)
         
         posts = DataService.instance.loadingPost
-        
+        print("posts \(posts)")
         loadDataNewfeeds()
         
         socket.on("viewed") {data, ack in
@@ -131,10 +131,9 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        
-        let post = posts[indexPath.row]
         if let cell = tableView.dequeueReusableCellWithIdentifier("PostCell") as? PostCell {
             
+            let post = posts[indexPath.row]
             cell.configureCell(post, indexPath: indexPath.row)
             cell.imgCommentButton.tag = indexPath.row
             cell.imgCommentButton.addTarget(self, action: #selector(ViewController.viewComment(_:)), forControlEvents: .TouchUpInside)
@@ -184,8 +183,9 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     func update() {
-        if let cells = tableView.visibleCells as? [UITableViewCell] {
-            
+        print("update")
+        if let cells = tableView.visibleCells as? [UITableViewCell] where cells != [] {
+            print("update 2 \(cells)")
             checkTimerLoadVideo = true
             var cell: UITableViewCell
             
@@ -220,12 +220,16 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     func playVideoNow(cell: UITableViewCell, indexPath: Int) {
         print("videoPlayNow \(indexPath)")
-        if videoPlayNow != indexPath{
-            pauseAllVideo()
-            playVideo(cell, post: posts[indexPath])
-            videoPlayNow = indexPath
+        if let post = posts[indexPath] as? Post{
+            if videoPlayNow != indexPath{
+                pauseAllVideo()
+                playVideo(cell, post: posts[indexPath])
+                videoPlayNow = indexPath
+            } else {
+                print("agian")
+            }
         } else {
-            print("agian")
+            "ko phai post"
         }
     }
     
