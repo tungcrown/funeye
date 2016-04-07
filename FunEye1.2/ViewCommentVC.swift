@@ -223,12 +223,13 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
                     self.commentTableView.reloadData()
                 }
                 
-                self.refreshControl.endRefreshing()
-                
                 if let isNext = res["isNext"] as? Bool where isNext == true {
                     self.nextCmtPage += 1
+                    self.refreshControl.endRefreshing()
                 } else {
-                    self.refreshControl = nil
+                    self.refreshControl.endRefreshing()
+                    self.refreshControl.removeFromSuperview()
+                    
                 }
                 
                 self.indicator.stopAnimating()

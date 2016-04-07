@@ -41,6 +41,7 @@
 		AAFD9ED81CB4BD410001D7CD /* ShowExploreVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFD9ED71CB4BD410001D7CD /* ShowExploreVC.swift */; };
 		AAFD9EDB1CB57B910001D7CD /* ProfileVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFD9EDA1CB57B910001D7CD /* ProfileVC.swift */; };
 		AAFD9EDE1CB6175D0001D7CD /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AAFD9EDC1CB6175D0001D7CD /* Main.storyboard */; };
+		AAFD9EE01CB656CC0001D7CD /* FollowVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFD9EDF1CB656CC0001D7CD /* FollowVC.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +82,7 @@
 		AAFD9ED71CB4BD410001D7CD /* ShowExploreVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShowExploreVC.swift; sourceTree = "<group>"; };
 		AAFD9EDA1CB57B910001D7CD /* ProfileVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileVC.swift; sourceTree = "<group>"; };
 		AAFD9EDD1CB6175D0001D7CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		AAFD9EDF1CB656CC0001D7CD /* FollowVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FollowVC.swift; sourceTree = "<group>"; };
 		F5DBC37A8DB4E0061C70971E /* Pods-FunEye1.2.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FunEye1.2.debug.xcconfig"; path = "Pods/Target Support Files/Pods-FunEye1.2/Pods-FunEye1.2.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -167,6 +169,7 @@
 				AAD527111CA9292900EDF5E8 /* ReviewVideoVC.swift */,
 				AA391EBE1CAB6888007CB7FA /* LoginVC.swift */,
 				AA391ED61CABDCEC007CB7FA /* ViewCommentVC.swift */,
+				AAFD9EDF1CB656CC0001D7CD /* FollowVC.swift */,
 			);
 			name = Controller;
 			sourceTree = "<group>";
@@ -400,6 +403,7 @@
 				AA391EBF1CAB6889007CB7FA /* LoginVC.swift in Sources */,
 				AAFD9ECD1CB4A98F0001D7CD /* ExploreCell.swift in Sources */,
 				AAD527121CA9292900EDF5E8 /* ReviewVideoVC.swift in Sources */,
+				AAFD9EE01CB656CC0001D7CD /* FollowVC.swift in Sources */,
 				AA391ED51CABB80C007CB7FA /* Friend.swift in Sources */,
 				AA391EDC1CACB87D007CB7FA /* ViewCommentCell.swift in Sources */,
 				AA391ED21CABB57A007CB7FA /* FirstFollowCell.swift in Sources */,

@@ -17,6 +17,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var uivTabar: UIView!
     
+    
     var refreshControl: UIRefreshControl!
     let indicator = UIActivityIndicatorView(activityIndicatorStyle: .Gray)
     
@@ -39,12 +40,20 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         tableView.delegate = self
         tableView.dataSource = self
         
+        tableView.estimatedRowHeight = 550
         
+        tableView.rowHeight = setHeightCell()
         
         getDataAccess()
         getPostFromAlamofire(URL_GET_NEW_FEED)
         setupSocketIO()
         setupRefreshControl()
+    }
+    
+    func setHeightCell() -> CGFloat {
+        let height: CGFloat = 45 + self.view.frame.size.width + 65 + 30 + 45
+        print("height \(height)")
+        return height
     }
     
     func setupRefreshControl() {
@@ -153,6 +162,14 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return posts.count
     }
+    /*
+    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        return UITableViewAutomaticDimension
+    }
+    
+    func tableView(tableView: UITableView, estimatedHeightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        return UITableViewAutomaticDimension
+    }*/
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         if let cell = tableView.dequeueReusableCellWithIdentifier("PostCell") as? PostCell {
@@ -250,7 +267,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         PLAYER_NOW =  AVPlayer(URL: nsUrl!)
         
         let witdthPlayVideo = self.view.frame.size.width
-        uiviewVideo = UIView(frame: CGRectMake(1, 55, witdthPlayVideo, witdthPlayVideo))
+        let uiview = UIView(frame: CGRectMake(0, 63, witdthPlayVideo, witdthPlayVideo))
+        uiviewVideo = uiview
         uiviewVideo.backgroundColor = UIColor.darkGrayColor()
         uiviewVideo.tag = 99
         uiviewVideo.alpha = 0
@@ -272,7 +290,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         
         loopVideo(PLAYER_NOW, post: post)
         
-        let uiviewTapVideo = UIView(frame: CGRectMake(0, 55, witdthPlayVideo, witdthPlayVideo))
+        let uiviewTapVideo = UIView(frame: CGRectMake(0, 63, witdthPlayVideo, witdthPlayVideo))
         cell.addSubview(uiviewTapVideo)
         self.view.bringSubviewToFront(uiviewTapVideo)
         
@@ -380,11 +398,21 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         let widthIcon: CGFloat = 80.0
         
         imageView.frame = CGRect(x: locationTap.x - widthIcon/2, y: locationTap.y - widthIcon/2, width: widthIcon, height: widthIcon)
+        
         sender.view?.addSubview(imageView)
         
-        UIView.animateWithDuration(3) {
+        UIView.animateWithDuration(0.5, delay: 0, options: [.Repeat, .Autoreverse, .CurveEaseOut], animations: {
+            imageView.frame.size.width = 90
+            imageView.frame.size.height = 90
+        }, completion: nil)
+        UIView.animateWithDuration(2) {
             imageView.alpha = 0.0
         }
+        
+        
+        
+        
+        
         PLAYER_NOW.play()
         
         let postId = posts[videoPlayNow].postId
