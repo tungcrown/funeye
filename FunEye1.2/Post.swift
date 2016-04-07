@@ -16,8 +16,8 @@ class Post: NSObject, NSCoding {
     
     private var _caption: String!
     private var _videoUrl: String!
-    private var _videoAVplayer: AVPlayer!
     private var _videoPath: String!
+    private var _videoThumb: String!
     private var _timeCreate: String!
     
     private var _userName: String!
@@ -55,12 +55,11 @@ class Post: NSObject, NSCoding {
         
     }
     
-    var videoAVplayer: AVPlayer {
-        get {
-            return _videoAVplayer
-        }
-        set {
-            _videoAVplayer = newValue
+    var videoThumb: String {
+        if _videoThumb == nil {
+            return "http://funeye.net:8000/img/logo-full.png"
+        } else {
+            return _videoThumb
         }
     }
     
@@ -101,7 +100,12 @@ class Post: NSObject, NSCoding {
     }
     
     var likes: Int {
-        return _likes
+        get {
+            return _likes
+        }
+        set {
+            _likes = newValue
+        }
     }
     
     var comments: Int {
@@ -139,6 +143,10 @@ class Post: NSObject, NSCoding {
         if let views = dictionary["views"] as? Int {
             self._views = views
         }
+        
+        if let thumb = dictionary["videothumb"] as? String {
+            self._videoThumb = thumb
+        }
         /*
         if let shares = dictionary["shares"] as? Int {
             self._shares = shares
@@ -172,7 +180,6 @@ class Post: NSObject, NSCoding {
                 }
             }
         } else {
-            print("dictionary[likes] \(dictionary["likes"])")
             self._isLikePost = false
         }
     }
@@ -187,6 +194,7 @@ class Post: NSObject, NSCoding {
         self._caption = aDecoder.decodeObjectForKey("caption") as? String
         self._videoUrl = aDecoder.decodeObjectForKey("videoUrl") as? String
         self._videoPath = aDecoder.decodeObjectForKey("videoPath") as? String
+        self._videoThumb = aDecoder.decodeObjectForKey("videoThumb") as? String
         self._timeCreate = aDecoder.decodeObjectForKey("timeCreate") as? String
         self._userName = aDecoder.decodeObjectForKey("userName") as? String
         self._userAvatar = aDecoder.decodeObjectForKey("userAvatar") as? String
@@ -203,6 +211,7 @@ class Post: NSObject, NSCoding {
         aCoder.encodeObject(self._caption, forKey: "caption")
         aCoder.encodeObject(self._videoUrl, forKey: "videoUrl")
         aCoder.encodeObject(self._videoPath, forKey: "videoPath")
+        aCoder.encodeObject(self._videoThumb, forKey: "videoThumb")
         aCoder.encodeObject(self._timeCreate, forKey: "timeCreate")
         aCoder.encodeObject(self._userName, forKey: "userName")
         aCoder.encodeObject(self._userAvatar, forKey: "userAvatar")
@@ -212,89 +221,4 @@ class Post: NSObject, NSCoding {
         aCoder.encodeObject(self._shares, forKey: "shares")
         aCoder.encodeObject(self._isLikePost, forKey: "isLikePost")
     }
-    /*
-    func playVideo(uiviewVideo: UIView) {
-        if _videoAVplayer != nil {
-            _videoAVplayer.play()
-            loopVideo(_videoAVplayer)
-        }else {
-            
-            let fullPath = DataService.instance.documentPathForFilename(_videoPath)
-            let nsUrl = NSURL(string: fullPath)
-            
-            _videoAVplayer =  AVPlayer(URL: nsUrl!)
-            
-            createPlayerController(_uiviewVideo, video: _videoAVplayer)
-            
-            _videoAVplayer.play()
-            loopVideo(_videoAVplayer)
- 
-            print("nil video play! \(_videoPath)")
-        }
-        
-        let fullPath = DataService.instance.documentPathForFilename(_videoPath)
-        let nsUrl = NSURL(string: fullPath)
-        
-        _videoAVplayer =  AVPlayer(URL: nsUrl!)
-        PLAYER_NOW = _videoAVplayer
-        createPlayerController(uiviewVideo, video: PLAYER_NOW)
-        PLAYER_NOW.play()
-        loopVideo(PLAYER_NOW)
-    }
-    
-    func createPlayerController(uiviewVideo: UIView, video: AVPlayer){
-        
-        let playerController = AVPlayerViewController()
-        
-        playerController.view.frame = uiviewVideo.bounds
-        playerController.view.sizeToFit()
-        
-        playerController.showsPlaybackControls = false
-        playerController.videoGravity = AVLayerVideoGravityResizeAspectFill
-        
-        //need remove old subview before add new subview
-        for subview in uiviewVideo.subviews as [UIView] {
-            subview.removeFromSuperview()
-        }
-        
-        uiviewVideo.addSubview(playerController.view)
-        
-        playerController.player = video
-        playerController.removeFromParentViewController()
-    }
-    
-    func SetUiviewVideo(uiviewVideo: UIView) {
-        //self._uiviewVideo = uiviewVideo
-        self._uiviewVideo = UIView(frame: uiviewVideo.bounds)
-        uiviewVideo.addSubview(_uiviewVideo)
-    }
-    
-    func pauseVideo() {
-        PLAYER_NOW = AVPlayer()
-        if self.Observer != nil {
-            NSNotificationCenter.defaultCenter().removeObserver(self.Observer)
-        }
-        
-        
-        if _videoAVplayer != nil {
-            //_uiviewVideo.removeFromSuperview()
-            _videoAVplayer.pause()
-            _videoAVplayer = AVPlayer()
-            
-            
-            if self.Observer != nil {
-                NSNotificationCenter.defaultCenter().removeObserver(self.Observer)
-            }
-        }
-    }
-    
-    private func loopVideo(videoPlayer: AVPlayer) {
-        self.Observer = NSNotificationCenter.defaultCenter().addObserverForName(AVPlayerItemDidPlayToEndTimeNotification, object: nil, queue: nil) { notification in
-            videoPlayer.seekToTime(kCMTimeZero)
-            videoPlayer.play()
-            
-            print("loop video \(URL_PUT_VIEW_POST(self._postId)) :\(videoPlayer)")
-            Alamofire.request(.PUT, URL_PUT_VIEW_POST(self._postId))
-        }
-    }*/
 }

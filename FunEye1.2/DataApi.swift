@@ -22,6 +22,9 @@ let URL_GET_NEW_FEED = URL_MAIN_DOMAIN + "/api/feed?page=1&access_token=\(ACCESS
 let URL_GET_FRIEND_FOLLOW = URL_MAIN_DOMAIN + "/api/suggestfriends?access_token=\(ACCESS_TOKEN)"
 let URL_GET_CATEGORIES = URL_MAIN_DOMAIN + "/api/categoryInfo?access_token=\(ACCESS_TOKEN)"
 
+func URL_GET_CATEGORY_POST(id: String) -> String {
+    return URL_MAIN_DOMAIN + "/api/categories/"+id+"?page=1&sort=creared&access_token=\(ACCESS_TOKEN)"
+}
 
 func URL_GET_COMMENT_POST(post_id: String) -> String{
     return URL_MAIN_DOMAIN + "/api/articles/\(post_id)/comments?access_token=\(ACCESS_TOKEN)"
@@ -31,8 +34,8 @@ func URL_PUT_VIEW_POST(post_id: String) -> String {
     return URL_MAIN_DOMAIN + "/api/articles/\(post_id)/view?access_token=\(ACCESS_TOKEN)"
 }
 
-func URL_PUT_LIKE_POST(post_id: String, isFollow: Bool) -> String {
-    if isFollow {
+func URL_PUT_LIKE_POST(post_id: String, isLike: Bool) -> String {
+    if isLike {
         return URL_MAIN_DOMAIN + "/api/articles/\(post_id)/like?access_token=\(ACCESS_TOKEN)"
     } else {
         return URL_MAIN_DOMAIN + "/api/articles/\(post_id)/unlike?access_token=\(ACCESS_TOKEN)"

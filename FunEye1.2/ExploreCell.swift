@@ -19,8 +19,6 @@ class ExploreCell: UITableViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
-            print("123")
         
         uivCategory.layer.cornerRadius = 3.0
         uivCategory.layer.shadowColor = UIColor(red: SHADOW_COLOR, green: SHADOW_COLOR, blue: SHADOW_COLOR, alpha: 0.5).CGColor

@@ -18,6 +18,7 @@ class PostCell: UITableViewCell {
     @IBOutlet weak var lblUserName: UILabel!
     @IBOutlet weak var lblTimeCreate: UILabel!
     
+    @IBOutlet weak var imgVideoThumb: UIImageView!
     @IBOutlet weak var lblCoutViews: UILabel!
     
     @IBOutlet weak var lblCountLikes: UILabel!
@@ -40,10 +41,6 @@ class PostCell: UITableViewCell {
         imgProfileUser.layer.cornerRadius = imgProfileUser.frame.width / 2
         imgProfileUser.clipsToBounds = true
         
-        let gesture = UITapGestureRecognizer(target: self, action: #selector(PostCell.tapToVideo(_:)))
-        gesture.numberOfTapsRequired = 1
-        uiviewVideo.addGestureRecognizer(gesture)
-        
     }
     
     override func setSelected(selected: Bool, animated: Bool) {
@@ -60,72 +57,14 @@ class PostCell: UITableViewCell {
         lblCountLikes.text = "\(post.likes)"
         lblCountComments.text = "\(post.comments)"
         
-        //post.SetUiviewVideo(uiviewVideo)
-        //load user photo
         DataService.instance.downloadAndSetImageFromUrl(post.userAvatar, imgView: imgProfileUser, imageCache: ViewController.imageCache)
-        
-        /*
-        let urlStr = post.videoUrl
-        let video: AVPlayer!
-        video = ViewController.videoCache.objectForKey(urlStr) as? AVPlayer
-        
-        if video != nil {
-            player = video
-            createPlayerController(player)
-            
-        } else {
-            print("Load post \(post.caption)")
-        
-            player = DataService.instance.VideoForPath(post.videoPath)
-            
-            post.videoAVplayer = player
-            
-            createPlayerController(player)
-            
-            ViewController.videoCache.setObject(player, forKey: post.videoUrl)
-            
-            if indexPath == 0 {
-                post.playVideo()
-            }
-        }
-        */
+        //print(post.videoThumb)
+        DataService.instance.downloadAndSetImageFromUrl(post.videoThumb, imgView: imgVideoThumb, imageCache: ViewController.imageCacheVideo)
  
         if post.isLikePost {
             btnLike.setImage(UIImage(named: "loved"), forState: .Normal)
         } else {
             btnLike.setImage(UIImage(named: "love"), forState: .Normal)
         }
-        
     }
-    
-    func createPlayerController(video: AVPlayer){
-        
-        
-        
-        let playerController = AVPlayerViewController()
-        
-        playerController.view.frame = uiviewVideo.bounds
-        playerController.view.sizeToFit()
-        
-        playerController.showsPlaybackControls = false
-        playerController.videoGravity = AVLayerVideoGravityResizeAspectFill
-        
-        //need remove old subview before add new subview
-        /*
-        for subview in uiviewVideo.subviews as [UIView] {
-            subview.removeFromSuperview()
-        }
-        */
-        uiviewVideo.insertSubview(playerController.view, atIndex: 0)
-        playerController.player = video
-    }
-    
-    func tapToVideo(sender: UITapGestureRecognizer) {
-        if ((PLAYER_NOW.rate != 0) && (PLAYER_NOW.error == nil)) {
-            PLAYER_NOW.pause()
-        }else {
-            PLAYER_NOW.play()
-        }
-    }
-
 }

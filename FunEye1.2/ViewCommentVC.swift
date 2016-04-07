@@ -15,7 +15,6 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     
     @IBOutlet weak var commentTableView: UITableView!
     @IBOutlet weak var uiviewOldCmt: UIView!
-    @IBOutlet weak var btnLoadOlderComment: UIButton!
     
     var btnPost: UIButton!
     var uivTextField: UIView!
@@ -27,42 +26,35 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     var comments = [Comment]()
     var nextCmtPage = 1
     
+    let indicator = UIActivityIndicatorView(activityIndicatorStyle: .Gray)
+    var refreshControl: UIRefreshControl!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         commentTableView.delegate = self
         commentTableView.dataSource = self
         
+        commentTableView.estimatedRowHeight = 70
+        commentTableView.rowHeight = UITableViewAutomaticDimension
+        
         print(post_id)
         
-        //download data
-        /*
-        let commentUrl = URL_GET_COMMENT_POST(post_id)
-        let url = NSURL(string: commentUrl)!
-        print("ulr comment \(url)")
-        Alamofire.request(.GET, url).responseJSON { response in
-            if let res = response.result.value as? Dictionary<String, AnyObject> {
-                if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
-                    for json in jsons {
-                        let comment = Comment(dictionary: json)
-                        print(comment.userAvatar)
-                        self.comments.append(comment)
-                    }
-                    self.commentTableView.reloadData()
-                }
-                
-                if let isNext = res["isNext"] as? Bool where isNext == true {
-                    print("more cmt true \(isNext)")
-                    self.nextCmtPage += 1
-                } else {
-                    print("more cmt false \(res["isNext"])")
-                    self.uiviewOldCmt.frame.size.height = 0
-                }
-            } else {
-                    print("comment nil")
-            }
-        }
-        */
+        indicator.center = view.center
+        view.addSubview(indicator)
+        indicator.startAnimating()
+        
+        loadCommentData()
+        
+        refreshControl = UIRefreshControl()
+        refreshControl.attributedTitle = NSAttributedString(string: "More older comment!")
+        refreshControl.addTarget(self, action: #selector(ViewController.refresh(_:)), forControlEvents: UIControlEvents.ValueChanged)
+        commentTableView.addSubview(self.refreshControl)
+    }
+    
+    func refresh(sender:AnyObject)
+    {
+        print("load new data refresh")
         loadCommentData()
     }
     
@@ -143,23 +135,28 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         uivTextField.addSubview(uivBoder)
     }
     
+    var checkDoneCmt = true
     func btnPost(sender: UIButton) {
         if textField.text != "" {
             let dataCmt = textField.text
             print("dataCmt \(dataCmt)")
             self.view.endEditing(true)
-            Alamofire.request(.POST, URL_GET_COMMENT_POST(post_id), parameters: ["content": dataCmt!]).responseJSON { response in
-                if let res = response.result.value as? Dictionary<String, AnyObject> {
-                    print("Comnet Done \(res)")
-                    print("Comnet Done \(res["content"])")
-                    
-                    let comment = Comment(dictionary: res)
-                    self.comments.append(comment)
-                    self.commentTableView.reloadData()
-                } else {
-                    print("response \(response)")
+            if checkDoneCmt {
+                checkDoneCmt = false
+                Alamofire.request(.POST, URL_GET_COMMENT_POST(post_id), parameters: ["content": dataCmt!]).responseJSON { response in
+                    self.checkDoneCmt = true
+                    if let res = response.result.value as? Dictionary<String, AnyObject> {
+                        print("Comnet Done \(res)")
+                        self.textField.text = ""
+                        
+                        self.nextCmtPage = 1
+                        self.comments = [Comment]()
+                        self.loadCommentData()
+                    } else {
+                        print("response \(response)")
+                    }
                 }
-             }
+            }
         }
     }
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
@@ -186,7 +183,7 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         view.endEditing(true)
         
     }
-    
+   
     func showAlertClickComment() {
         let myActionSheet = UIAlertController(title: nil, message: nil, preferredStyle: UIAlertControllerStyle.ActionSheet)
         
@@ -216,7 +213,6 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     
     func loadCommentData() {
         let url =  URL_MAIN_DOMAIN + "/api/articles/\(post_id)/comments?page=\(nextCmtPage)&access_token=\(ACCESS_TOKEN)"
-        btnLoadOlderComment.setTitle("Tải nhận xét...", forState: .Normal)
         Alamofire.request(.GET, url).responseJSON { response in
             if let res = response.result.value as? Dictionary<String, AnyObject> {
                 if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
@@ -227,30 +223,20 @@ class ViewCommentVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
                     self.commentTableView.reloadData()
                 }
                 
+                self.refreshControl.endRefreshing()
+                
                 if let isNext = res["isNext"] as? Bool where isNext == true {
-                    print("more cmt true \(isNext)")
                     self.nextCmtPage += 1
-                    self.btnLoadOlderComment.setTitle("Xem nhận xét cũ hơn", forState: .Normal)
                 } else {
-                    print("more cmt false \(res["isNext"])")
-                    UIView.animateWithDuration(0.5, animations: {
-                        self.btnLoadOlderComment.alpha = 0
-                        }, completion: { (true) in
-                            self.uiviewOldCmt.frame.size.height = 0
-                            self.btnLoadOlderComment.frame.size.height = 0
-                    })
-                    
+                    self.refreshControl = nil
                 }
+                
+                self.indicator.stopAnimating()
             } else {
                 print("comment nil")
             }
         }
     }
-    
-    @IBAction func loadOlderComment(sender: UIButton) {
-        loadCommentData()
-    }
-    
     @IBAction func backNewfeeds(sender: UIButton) {
         self.dismissViewControllerAnimated(true, completion: nil)
     }

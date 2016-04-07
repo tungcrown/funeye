@@ -15,16 +15,26 @@ class ExploreVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     var topics = [Dictionary<String, AnyObject?>]()
     
+    var refreshControl: UIRefreshControl!
+    let indicator = UIActivityIndicatorView(activityIndicatorStyle: .Gray)
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         tabeviewCategories.delegate = self
         tabeviewCategories.dataSource = self
         
+        setupRefreshControl()
         
+        indicator.center = view.center
+        view.addSubview(indicator)
+        indicator.startAnimating()
         
+        loadCotegory()
+    }
+    
+    func loadCotegory() {
         print(URL_GET_CATEGORIES)
-        //URL_GET_CATEGORIES = "http://funeye.net:8000/api/categoryInfo?access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InR1bmdjcm93bjIwMTZAZ21haWwuY29tIiwiaWF0IjoxNDU5NDgzNzU0fQ.UUNbN_yLZktV1wZKv7umlGMT8q_b10sOEFyBSS5hZHM"
         Alamofire.request(.GET, URL_GET_CATEGORIES).responseJSON { response in
             if response.result.error != nil {
                 print("error load follow \(response.result.error)")
@@ -33,17 +43,31 @@ class ExploreVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
                     if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
                         for json in jsons {
                             if let id = json["_id"] as? Int {
-                                let topic = ["_id": json["_id"], "image" : "https://graph.facebook.com/246809342331820/picture", "name": json["name"], "backgroundColor": json["color"]]
+                                let topic = ["_id": id, "image" : "https://graph.facebook.com/246809342331820/picture", "name": json["name"], "backgroundColor": json["color"]]
                                 self.topics.append(topic)
                             }
                         }
+                        self.indicator.stopAnimating()
                         self.tabeviewCategories.reloadData()
+                        self.refreshControl.endRefreshing()
                     }
                 } else {
                     print("Load topic follow \(response)")
                 }
             }
         }
+    }
+    
+    func setupRefreshControl() {
+        refreshControl = UIRefreshControl()
+        refreshControl.attributedTitle = NSAttributedString(string: "Load new post")
+        refreshControl.addTarget(self, action: #selector(ViewController.refresh(_:)), forControlEvents: UIControlEvents.ValueChanged)
+        tabeviewCategories.addSubview(self.refreshControl)
+    }
+    
+    func refresh(sender:AnyObject)
+    {
+        loadCotegory()
     }
     
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
@@ -86,20 +110,27 @@ class ExploreVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     func btnChooseCategoryACTION(sender: UIButton) {
         let tag = sender.tag
-        if let cateId = topics[tag]["name"] as? String {
-            performSegueWithIdentifier("ShowExploreVC", sender: cateId)
-        }
+        performSegueWithIdentifier("ShowExploreVC", sender: tag)
+        
     }
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         if segue.identifier == "ShowExploreVC" {
             if let showExploreVC = segue.destinationViewController as? ShowExploreVC {
-                if let dataSender = sender as? String {
-                    showExploreVC.data = dataSender
+                if let dataSender = sender as? Int {
+                    if let cateId = topics[dataSender]["_id"] as? Int {
+                        showExploreVC.data = "\(cateId)"
+                    }
+                    if let name = topics[dataSender]["name"] as? String {
+                        showExploreVC.cateName = name
+                    }
                 }
             }
         }
     }
 
+    @IBAction func btnBackToNewfeedsVC(sender: UIButton) {
+        self.dismissViewControllerAnimated(true, completion: nil)
+    }
     
 }

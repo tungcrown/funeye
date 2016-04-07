@@ -13,20 +13,22 @@ class ViewCommentCell: UITableViewCell {
     @IBOutlet weak var imgUserAvatar: UIImageView!
     @IBOutlet weak var lblUserName: UILabel!
     @IBOutlet weak var lblCreateTime: UILabel!
-    @IBOutlet weak var lblCaption: UILabel!
     
-    
+    @IBOutlet weak var txtviewCaption: UITextView!
     override func awakeFromNib() {
         super.awakeFromNib()
         
         imgUserAvatar.layer.cornerRadius = imgUserAvatar.frame.width / 2
         imgUserAvatar.clipsToBounds = true
+        
+        txtviewCaption.textContainerInset =
+            UIEdgeInsetsMake(0,-5,0,0);
     }
     
     func configureCell(comment: Comment) {
         DataService.instance.downloadAndSetImageFromUrl(comment.userAvatar, imgView: imgUserAvatar, imageCache: ViewCommentVC.imageCache)
         lblUserName.text = comment.userName
         lblCreateTime.text = timeAgoSinceDateString(comment.timeCreate)
-        lblCaption.text = comment.caption
+        txtviewCaption.text = comment.caption
     }
 }

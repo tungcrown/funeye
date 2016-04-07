@@ -17,15 +17,21 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var uivTabar: UIView!
     
+    var refreshControl: UIRefreshControl!
+    let indicator = UIActivityIndicatorView(activityIndicatorStyle: .Gray)
+    
     var posts = [Post]()
-    var videoPlayNow: Int!
+    var videoPlayNow: Int = -1
     
     static var imageCache = NSCache()
-    static var videoCache = NSCache()
+    static var imageCacheVideo = NSCache()
     
     private var Observer: NSObjectProtocol!
     
     let socket = SocketIOClient(socketURL: NSURL(string: "http://funeye.net:8080")!, options: [.Log(false), .ForcePolling(true)])
+    
+    let playerController = AVPlayerViewController()
+    var uiviewVideo =  UIView()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,34 +39,30 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         tableView.delegate = self
         tableView.dataSource = self
         
+        
+        
         getDataAccess()
-        
-        DataService.instance.loadPosts()
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(ViewController.onPostsLoaded), name: "PostsLoaded", object: nil)
-        
-        posts = DataService.instance.loadingPost
-        print("posts \(posts)")
-        loadDataNewfeeds()
-        
-        socket.on("viewed") {data, ack in
-            if let postId = data as? [Dictionary<String, AnyObject>] {
-                if let str = postId[0]["id"] as? Int {
-                    for (index, post) in self.posts.enumerate() {
-                        if Int(post.postId) ==  str {
-                            print("caption view \(post.caption)")
-                            if let view = postId[0]["views"] as? Int {
-                                self.posts[index].views = view
-                                self.tableView.reloadData()
-                            }
-                        }
-                    }
-                }
- 
-            }
-        }
-        socket.connect()
+        getPostFromAlamofire(URL_GET_NEW_FEED)
+        setupSocketIO()
+        setupRefreshControl()
     }
     
+    func setupRefreshControl() {
+        indicator.center = view.center
+        view.addSubview(indicator)
+        indicator.startAnimating()
+        
+        refreshControl = UIRefreshControl()
+        refreshControl.attributedTitle = NSAttributedString(string: "Load new post")
+        refreshControl.addTarget(self, action: #selector(ViewController.refresh(_:)), forControlEvents: UIControlEvents.ValueChanged)
+        tableView.addSubview(self.refreshControl)
+    }
+    
+    func refresh(sender:AnyObject)
+    {
+        print("load new data refresh")
+        self.refreshControl.endRefreshing()
+    }
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
         videoPlayNow = -1
@@ -68,23 +70,24 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     override func viewDidDisappear(animated: Bool) {
-        super.viewDidDisappear(animated)
-        
         pauseAllVideo()
     }
     
-    func loadDataNewfeeds() {
-        //download data
-        let NewfeedsUrl = URL_GET_NEW_FEED
-        print("NewfeedsUrl \(NewfeedsUrl)")
-        let url = NSURL(string: NewfeedsUrl)!
-        Alamofire.request(.GET, url).responseJSON { response in
+    func getPostFromAlamofire(url: String) {
+        DataService.instance.loadPosts()
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(ViewController.onPostsLoaded), name: "PostsLoaded", object: nil)
+        
+        posts = DataService.instance.loadingPost
+        
+        print("url load data \(url)")
+        let nsUrl = NSURL(string: url)!
+        Alamofire.request(.GET, nsUrl).responseJSON { response in
             if let res = response.result.value as? Dictionary<String, AnyObject> {
                 if let jsons = res["data"] as? [Dictionary<String, AnyObject>] {
                     print("load new data")
+                    self.indicator.stopAnimating()
                     for json in jsons {
                         let post = Post(dictionary: json)
-                        //self.checkExistAndAddPost(post)
                         DataService.instance.addPost(post)
                     }
                 }
@@ -93,7 +96,6 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             }
         }
     }
-    
     
     func getDataAccess() {
         if NSUserDefaults.standardUserDefaults().valueForKey(ACCESS_TOKEN_KEY) != nil {
@@ -108,19 +110,41 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             USER_ID = ""
         }
     }
-    /*
-    func checkExistAndAddPost(post: Post) {
-        var checkExistPost = false
-        for postCheck in posts {
-            if postCheck.videoUrl == post.videoUrl {
-                checkExistPost = true
+    
+    func setupSocketIO() {
+        socket.on("viewed") {data, ack in
+            if let postId = data as? [Dictionary<String, AnyObject>] {
+                if let str = postId[0]["id"] as? Int {
+                    for (index, post) in self.posts.enumerate() {
+                        if Int(post.postId) ==  str {
+                            if let view = postId[0]["views"] as? Int {
+                                self.posts[index].views = view
+                                self.tableView.reloadData()
+                            }
+                        }
+                    }
+                }
+                
             }
         }
-        
-        if checkExistPost == false {
-            DataService.instance.addPost(post)
+        socket.on("liked") {data, ack in
+            if let postId = data as? [Dictionary<String, AnyObject>] {
+                if let str = postId[0]["id"] as? Int {
+                    for (index, post) in self.posts.enumerate() {
+                        if Int(post.postId) ==  str {
+                            print("socket like \(data)")
+                            if let likes = postId[0]["likesCount"] as? Int {
+                                self.posts[index].likes = likes
+                                self.tableView.reloadData()
+                            }
+                        }
+                    }
+                }
+                
+            }
         }
-    }*/
+        socket.connect()
+    }
     
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         return 1
@@ -148,15 +172,14 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     func tableView(tableView: UITableView, didEndDisplayingCell cell: UITableViewCell, forRowAtIndexPath indexPath: NSIndexPath) {
-        print("fir \(indexPath.row)")
         
-        let nsIndexPath = NSIndexPath(forRow: videoPlayNow, inSection: 0)
-        
-        if let cell = tableView.cellForRowAtIndexPath(nsIndexPath) {
-            print("11111")
-        } else {
-            print("11112")
-            pauseAllVideo()
+        if videoPlayNow >= 0 {
+            let nsIndexPath = NSIndexPath(forRow: videoPlayNow, inSection: 0)
+            if let cell = tableView.cellForRowAtIndexPath(nsIndexPath) {
+            
+            } else {
+                pauseAllVideo()
+            }
         }
         /*if videoPlayNow == indexPath.row {
             pauseAllVideo()
@@ -167,25 +190,14 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     var checkTimerLoadVideo = true;
     
     func scrollViewWillEndDragging(scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        /*
-        if velocity.y > 0 {
-            uivTabar.hidden = true
-        }else {
-            uivTabar.hidden = false
-        }
-        */
-        
         if checkTimerLoadVideo {
             checkTimerLoadVideo = false
-            
             timer = NSTimer.scheduledTimerWithTimeInterval(0.5, target: self, selector: #selector(ViewController.update), userInfo: nil, repeats: false)
         }
     }
     
     func update() {
-        print("update")
         if let cells = tableView.visibleCells as? [UITableViewCell] where cells != [] {
-            print("update 2 \(cells)")
             checkTimerLoadVideo = true
             var cell: UITableViewCell
             
@@ -219,17 +231,14 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     func playVideoNow(cell: UITableViewCell, indexPath: Int) {
-        print("videoPlayNow \(indexPath)")
-        if let post = posts[indexPath] as? Post{
+        if let post = posts[indexPath] as? Post {
             if videoPlayNow != indexPath{
                 pauseAllVideo()
-                playVideo(cell, post: posts[indexPath])
+                playVideo(cell, post: post)
                 videoPlayNow = indexPath
             } else {
                 print("agian")
             }
-        } else {
-            "ko phai post"
         }
     }
     
@@ -241,29 +250,52 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         PLAYER_NOW =  AVPlayer(URL: nsUrl!)
         
         let witdthPlayVideo = self.view.frame.size.width
-        let uiviewVideo = UIView(frame: CGRectMake(0, 55, witdthPlayVideo, witdthPlayVideo))
+        uiviewVideo = UIView(frame: CGRectMake(1, 55, witdthPlayVideo, witdthPlayVideo))
         uiviewVideo.backgroundColor = UIColor.darkGrayColor()
         uiviewVideo.tag = 99
+        uiviewVideo.alpha = 0
         
         cell.addSubview(uiviewVideo)
-        
-        let playerController = AVPlayerViewController()
-        
+    
         playerController.view.frame = uiviewVideo.bounds
         playerController.view.sizeToFit()
+        playerController.view.alpha = 0.0
         
         playerController.showsPlaybackControls = false
         playerController.videoGravity = AVLayerVideoGravityResizeAspectFill
         
+        
         uiviewVideo.insertSubview(playerController.view, atIndex: 0)
         playerController.player = PLAYER_NOW
         
-        PLAYER_NOW.play()
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.2, target: self, selector: #selector(ViewController.delayPlayVideo), userInfo: nil, repeats: false)
+        
         loopVideo(PLAYER_NOW, post: post)
+        
+        let uiviewTapVideo = UIView(frame: CGRectMake(0, 55, witdthPlayVideo, witdthPlayVideo))
+        cell.addSubview(uiviewTapVideo)
+        self.view.bringSubviewToFront(uiviewTapVideo)
         
         let gesture = UITapGestureRecognizer(target: self, action: #selector(self.tapToVideo(_:)))
         gesture.numberOfTapsRequired = 1
-        uiviewVideo.addGestureRecognizer(gesture)
+        uiviewTapVideo.userInteractionEnabled = true
+        uiviewTapVideo.addGestureRecognizer(gesture)
+        
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(self.doubleTapToVideo(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        uiviewTapVideo.userInteractionEnabled = true
+        uiviewTapVideo.addGestureRecognizer(doubleTap)
+    }
+    
+    func delayPlayVideo() {
+        playerController.view.alpha = 1.0
+        uiviewVideo.alpha = 1.0
+        PLAYER_NOW.play()
+        if (PLAYER_NOW.rate != 0 && PLAYER_NOW.error == nil) {
+            
+        } else {
+            print("player.error \(PLAYER_NOW.error)")
+        }
     }
     
     private func loopVideo(videoPlayer: AVPlayer, post: Post) {
@@ -271,13 +303,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             videoPlayer.seekToTime(kCMTimeZero)
             videoPlayer.play()
             
-            print("loop video \(URL_PUT_VIEW_POST(post.postId)) :\(videoPlayer)")
+            print("loop video :\(videoPlayer)")
             Alamofire.request(.PUT, URL_PUT_VIEW_POST(post.postId))
         }
     }
  
     func onPostsLoaded() {
-        print("done load posts")
         posts = DataService.instance.loadingPost
         tableView.reloadData()
     }
@@ -286,6 +317,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     func pauseAllVideo() {
         tableView.viewWithTag(99)?.removeFromSuperview()
+        PLAYER_NOW.pause()
         PLAYER_NOW = AVPlayer()
         if Observer != nil {
             NSNotificationCenter.defaultCenter().removeObserver(Observer)
@@ -301,16 +333,15 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     func likePost(sender: UIButton) {
         print("like post")
         let post = posts[sender.tag]
+        
         let postId = post.postId
         post.isLikePost = !post.isLikePost
         
-        if post.isLikePost {
-            sender.setImage(UIImage(named: "loved"), forState: .Normal)
-        } else {
-            sender.setImage(UIImage(named: "love"), forState: .Normal)
-        }
+        Alamofire.request(.PUT, URL_PUT_LIKE_POST(postId, isLike: post.isLikePost))
+    }
+    
+    func likePostAction(post: Post) {
         
-        Alamofire.request(.PUT, URL_PUT_LIKE_POST(postId, isFollow: post.isLikePost))
     }
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
@@ -323,12 +354,45 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         }
     }
     
+    var isDouleTap = false
     func tapToVideo(sender: UITapGestureRecognizer) {
-        if ((PLAYER_NOW.rate != 0) && (PLAYER_NOW.error == nil)) {
-            PLAYER_NOW.pause()
-        }else {
-            PLAYER_NOW.play()
+        isDouleTap = false
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.1, target: self, selector: #selector(ViewController.checkTapOrDouleTap), userInfo: nil, repeats: false)
+    }
+    
+    func checkTapOrDouleTap() {
+        if isDouleTap == false {
+            if ((PLAYER_NOW.rate != 0) && (PLAYER_NOW.error == nil)) {
+                PLAYER_NOW.pause()
+            }else {
+                PLAYER_NOW.play()
+            }
         }
+    }
+    
+    func doubleTapToVideo(sender: UITapGestureRecognizer) {
+        isDouleTap = true
+        
+        let locationTap = sender.locationInView(sender.view)
+        let imageName = "loved"
+        let image = UIImage(named: imageName)
+        let imageView = UIImageView(image: image!)
+        let widthIcon: CGFloat = 80.0
+        
+        imageView.frame = CGRect(x: locationTap.x - widthIcon/2, y: locationTap.y - widthIcon/2, width: widthIcon, height: widthIcon)
+        sender.view?.addSubview(imageView)
+        
+        UIView.animateWithDuration(3) {
+            imageView.alpha = 0.0
+        }
+        PLAYER_NOW.play()
+        
+        let postId = posts[videoPlayNow].postId
+        if posts[videoPlayNow].isLikePost == false {
+            posts[videoPlayNow].isLikePost = true
+            Alamofire.request(.PUT, URL_PUT_LIKE_POST(postId, isLike: true))
+        }
+        
     }
 }
 

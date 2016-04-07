@@ -52,7 +52,7 @@ class Friend {
         if let avatar = dictionary["avatar"] as? String {
             self._avatarUrl = avatar
         } else {
-            self._avatarUrl = "https://graph.facebook.com/tungcrown2016/picture"
+            self._avatarUrl = "http://funeye.net:8000/img/logo-full.png"
         }
         
         if let username = dictionary["username"] as? String {

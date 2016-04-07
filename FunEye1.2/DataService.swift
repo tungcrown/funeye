@@ -61,7 +61,7 @@ class DataService {
                     /*if self._loadingPost.count > 3 {
                         self._loadingPost.removeLast()
                     }*/
-                    self._loadingPost.append(post)
+                    self._loadingPost.insert(post, atIndex:0)
                     
                     
                     let postsData = NSKeyedArchiver.archivedDataWithRootObject(self._loadingPost)
@@ -78,40 +78,6 @@ class DataService {
             }
         }
     }
-    /*
-    func saveImage(imageUrl: String) {
-        var localPath: NSURL?
-        var pathComponent: String?
-        
-        Alamofire.download(.GET, imageUrl, destination: { (temporaryURL, response) in
-            let directoryURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0]
-            //let pathComponent = response.suggestedFilename
-            pathComponent = "avatar\(NSDate.timeIntervalSinceReferenceDate()).jpg"
-            
-            localPath = directoryURL.URLByAppendingPathComponent(pathComponent!)
-            
-            return localPath!
-        }).response { (request, response, data, error) in
-            
-            if localPath != nil {
-                print("Downloaded user avatar to \(localPath!)")
-                
-                
-                self._loadingPost.append(post)
-                
-                let postsData = NSKeyedArchiver.archivedDataWithRootObject(self._loadingPost)
-                NSUserDefaults.standardUserDefaults().setObject(postsData, forKey: self.KEY_POSTS)
-                NSUserDefaults.standardUserDefaults().synchronize()
-                
-                self.loadPosts()
-            }
-            
-            if error != nil {
-                print("error download: \(error.debugDescription)")
-            }
-            
-        }
-    }*/
     
     func loadPosts() {
         if let postsData = NSUserDefaults.standardUserDefaults().objectForKey(KEY_POSTS) as? NSData {
@@ -126,8 +92,6 @@ class DataService {
     }
     
     func addPost(post: Post) {
-        //_loadingPost.append(post)
-        
         savePosts(post)
         loadPosts()
     }
